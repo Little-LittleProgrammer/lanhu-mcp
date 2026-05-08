@@ -2133,14 +2133,14 @@ class MessageStore:
 def get_user_info(ctx: Context) -> tuple:
     """
     从URL query参数获取用户信息
-    
+
     MCP连接URL格式：http://xxx:port/mcp?role=后端&name=张三
     """
     try:
         # 使用 FastMCP 提供的 get_http_request 获取当前请求
         from fastmcp.server.dependencies import get_http_request
         req = get_http_request()
-        
+
         # 从 query 参数获取
         name = req.query_params.get('name', '匿名')
         role = req.query_params.get('role', '未知')
@@ -2148,6 +2148,35 @@ def get_user_info(ctx: Context) -> tuple:
     except Exception:
         pass
     return '匿名', '未知'
+
+
+def get_cookie_from_request() -> str:
+    """
+    从HTTP Header获取Cookie（优先级高于环境变量）
+
+    支持通过HTTP Header传入Cookie：
+    - X-Lanhu-Cookie: your_cookie_here
+
+    如果Header中没有提供，则使用环境变量中的LANHU_COOKIE
+    """
+    try:
+        from fastmcp.server.dependencies import get_http_request
+        req = get_http_request()
+
+        # 从 Header 获取 cookie（支持多种header名称）
+        header_cookie = (
+            req.headers.get('x-lanhu-cookie') or
+            req.headers.get('X-Lanhu-Cookie') or
+            req.headers.get('lanhu-cookie') or
+            ''
+        )
+        if header_cookie:
+            return header_cookie
+    except Exception:
+        pass
+
+    # 回退到环境变量
+    return COOKIE
 
 
 def _clean_message_dict(msg: dict, current_user_name: str = None) -> dict:
@@ -2303,7 +2332,7 @@ class LanhuExtractor:
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
             "Referer": "https://lanhuapp.com/web/",
             "Accept": "application/json, text/plain, */*",
-            "Cookie": COOKIE,
+            "Cookie": get_cookie_from_request(),
             "sec-ch-ua": '"Chromium";v="142", "Google Chrome";v="142", "Not_A Brand";v="99"',
             "sec-ch-ua-mobile": "?0",
             "sec-ch-ua-platform": '"macOS"',
@@ -3306,11 +3335,12 @@ class LanhuExtractor:
 
     async def _fetch_dds_schema(self, version_id: str) -> dict:
         """调用 DDS store_schema_revise 获取 data_resource_url，再拉取 schema JSON（与 lanhu-html-converter-mcp 一致）"""
+        dds_cookie = get_cookie_from_request()
         dds_headers = {
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
             "Accept": "application/json, text/plain, */*",
             "Referer": "https://dds.lanhuapp.com/",
-            "Cookie": DDS_COOKIE,
+            "Cookie": dds_cookie,
             "Authorization": "Basic dW5kZWZpbmVkOg==",
         }
         async with httpx.AsyncClient(timeout=HTTP_TIMEOUT, headers=dds_headers, follow_redirects=True) as dds_client:
@@ -3789,8 +3819,9 @@ async def lanhu_resolve_invite_link(
     """
     try:
         # 解析Cookie字符串为playwright格式
+        current_cookie = get_cookie_from_request()
         cookies = []
-        for cookie_str in COOKIE.split('; '):
+        for cookie_str in current_cookie.split('; '):
             if '=' in cookie_str:
                 name, value = cookie_str.split('=', 1)
                 cookies.append({

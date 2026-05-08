@@ -263,13 +263,18 @@ docker-compose down              # 停止
 
 在支持 MCP 的 AI 客户端（如 Claude Code、Cursor、Windsurf）中配置：
 
+#### 方式一：通过 HTTP Header 传入 Cookie（推荐）
+
 **Claude Code 配置示例：**
 ```json
 {
   "mcpServers": {
     "lanhu": {
       "type": "http",
-      "url": "http://localhost:8000/mcp?role=Developer&name=YourName"
+      "url": "http://localhost:8000/mcp?role=Developer&name=YourName",
+      "headers": {
+        "X-Lanhu-Cookie": "你的蓝湖Cookie值"
+      }
     }
   }
 }
@@ -280,10 +285,38 @@ docker-compose down              # 停止
 {
   "mcpServers": {
     "lanhu": {
+      "url": "http://localhost:8000/mcp?role=Developer&name=YourName",
+      "headers": {
+        "X-Lanhu-Cookie": "你的蓝湖Cookie值"
+      }
+    }
+  }
+}
+```
+
+> ✅ **优势**：
+> - 无需在服务器端配置 `.env` 文件
+> - 每个开发者可以使用自己的 Cookie
+> - 更安全，敏感信息不会出现在 URL 中
+> - 详细配置指南：[HEADER_CONFIG.md](HEADER_CONFIG.md)
+
+#### 方式二：使用服务器端环境变量
+
+如果客户端不支持 `headers` 字段，可以在服务器端配置 `.env` 文件：
+
+```json
+{
+  "mcpServers": {
+    "lanhu": {
       "url": "http://localhost:8000/mcp?role=Developer&name=YourName"
     }
   }
 }
+```
+
+然后在服务器的 `.env` 文件中配置：
+```bash
+LANHU_COOKIE="你的蓝湖Cookie值"
 ```
 
 > 📌 URL 参数说明：
