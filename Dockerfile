@@ -11,9 +11,15 @@ ARG HTTPS_PROXY
 ENV HTTP_PROXY=${HTTP_PROXY}
 ENV HTTPS_PROXY=${HTTPS_PROXY}
 ENV PYTHONUNBUFFERED=1
+ENV PLAYWRIGHT_DOWNLOAD_HOST=https://npmmirror.com/mirrors/playwright
 
 # 安装系统依赖
-RUN apt-get update && apt-get install -y \
+RUN if [ -f /etc/apt/sources.list.d/debian.sources ]; then \
+        sed -i 's|deb.debian.org|mirrors.aliyun.com|g; s|security.debian.org|mirrors.aliyun.com|g' /etc/apt/sources.list.d/debian.sources; \
+    elif [ -f /etc/apt/sources.list ]; then \
+        sed -i 's|deb.debian.org|mirrors.aliyun.com|g; s|security.debian.org|mirrors.aliyun.com|g' /etc/apt/sources.list; \
+    fi \
+    && apt-get update && apt-get install -y \
     curl \
     wget \
     gnupg \
@@ -43,7 +49,7 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 
 # 安装Python依赖
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
 
 # 安装Playwright浏览器
 RUN playwright install chromium
@@ -64,4 +70,3 @@ EXPOSE 8000
 
 # 运行MCP服务器（使用HTTP传输）
 CMD ["python", "lanhu_mcp_server.py"]
-

@@ -10,7 +10,7 @@ services:
     env_file:
       - .env  # 从 .env 文件加载环境变量
     ports:
-      - "8000:8000"  # 将宿主机的 8000 端口映射到容器的 8000 端口
+      - "9797:8000"  # 将宿主机的 9797 端口映射到容器的 8000 端口
     volumes:
       - ./data:/app/data  # 挂载数据目录，持久化缓存和截图
       - ./logs:/app/logs  # 挂载日志目录
@@ -79,4 +79,3 @@ services:
 #     - 检查容器状态：docker-compose ps
 #     - 重启服务：docker-compose restart lanhu-mcp
 #
-
