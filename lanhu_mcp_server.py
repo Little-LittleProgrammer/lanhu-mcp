@@ -77,6 +77,20 @@ VIEWPORT_HEIGHT = int(os.getenv("VIEWPORT_HEIGHT", "1080"))
 # 调试模式
 DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 
+# Optional system Chromium path for Docker/server deployments where Playwright
+# browser downloads are slow or blocked.
+PLAYWRIGHT_CHROMIUM_EXECUTABLE = os.getenv("PLAYWRIGHT_CHROMIUM_EXECUTABLE")
+PLAYWRIGHT_NO_SANDBOX = os.getenv("PLAYWRIGHT_NO_SANDBOX", "false").lower() == "true"
+
+
+def get_chromium_launch_options() -> dict:
+    options = {"headless": True}
+    if PLAYWRIGHT_CHROMIUM_EXECUTABLE:
+        options["executable_path"] = PLAYWRIGHT_CHROMIUM_EXECUTABLE
+    if PLAYWRIGHT_NO_SANDBOX:
+        options["args"] = ["--no-sandbox", "--disable-dev-shm-usage"]
+    return options
+
 # 角色枚举（用于识别用户身份）
 VALID_ROLES = ["后端", "前端", "客户端", "开发", "运维", "产品", "项目经理"]
 
@@ -3596,7 +3610,7 @@ async def screenshot_page_internal(resource_dir: str, page_names: List[str], out
     time.sleep(1)
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await p.chromium.launch(**get_chromium_launch_options())
         # viewport 只影响初始窗口大小，不影响 full_page=True 的截图范围
         page = await browser.new_page(viewport={'width': VIEWPORT_WIDTH, 'height': VIEWPORT_HEIGHT})
 
@@ -3833,7 +3847,7 @@ async def lanhu_resolve_invite_link(
         
         # 使用playwright来处理前端重定向
         async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
+            browser = await p.chromium.launch(**get_chromium_launch_options())
             context = await browser.new_context()
             
             # 添加cookies
@@ -6454,5 +6468,3 @@ if __name__ == "__main__":
     SERVER_HOST = os.getenv("SERVER_HOST", "0.0.0.0")
     SERVER_PORT = int(os.getenv("SERVER_PORT", "8000"))
     mcp.run(transport="http", path="/mcp", host=SERVER_HOST, port=SERVER_PORT)
-
-

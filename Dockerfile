@@ -11,6 +11,9 @@ ARG HTTPS_PROXY
 ENV HTTP_PROXY=${HTTP_PROXY}
 ENV HTTPS_PROXY=${HTTPS_PROXY}
 ENV PYTHONUNBUFFERED=1
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE=/usr/bin/chromium
+ENV PLAYWRIGHT_NO_SANDBOX=true
 
 # 安装系统依赖
 RUN if [ -f /etc/apt/sources.list.d/debian.sources ]; then \
@@ -19,6 +22,7 @@ RUN if [ -f /etc/apt/sources.list.d/debian.sources ]; then \
         sed -i 's|deb.debian.org|mirrors.aliyun.com|g; s|security.debian.org|mirrors.aliyun.com|g' /etc/apt/sources.list; \
     fi \
     && apt-get update && apt-get install -y \
+    chromium \
     curl \
     wget \
     gnupg \
@@ -49,10 +53,6 @@ COPY requirements.txt .
 
 # 安装Python依赖
 RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
-
-# 安装Playwright浏览器
-RUN playwright install chromium
-RUN playwright install-deps chromium
 
 # 复制MCP服务器文件
 COPY lanhu_mcp_server.py .
